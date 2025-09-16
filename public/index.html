@@ -39,22 +39,38 @@
       const res = await fetch('/api/faction', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ faction }) });
       return res.json();
     }
-    function markdownSnippet(id) {
-      const origin = window.location.origin;
-      return `![faction](${origin}/badge/${id}.svg)`;
+    function markdownFromUrl(url) {
+      return `![faction](${url})`;
     }
     function imageUrl(id) {
       const origin = window.location.origin;
       return `${origin}/badge/${id}.svg`;
+    }
+    function bigImageUrl(id) {
+      const origin = window.location.origin;
+      return `${origin}/image/${id}.svg`;
+    }
+    function cacheBust(url) {
+      const u = new URL(url, window.location.origin);
+      u.searchParams.set('ts', Date.now().toString());
+      return u.toString();
+    }
+    function factionBadgeUrl(f) {
+      const origin = window.location.origin;
+      return `${origin}/badge?f=${encodeURIComponent(f)}`;
+    }
+    function factionBigUrl(f) {
+      const origin = window.location.origin;
+      return `${origin}/image?f=${encodeURIComponent(f)}`;
     }
     async function init() {
       const [state, cfg] = await Promise.all([fetchMe(), fetchConfig()]);
       const app = document.getElementById('app');
       const user = state.user;
       const current = user.faction || '';
-      const md = markdownSnippet(user.id);
-      const img = imageUrl(user.id);
-      const big = `${window.location.origin}/image/${user.id}.svg`;
+      const img = user.id ? imageUrl(user.id) : (current ? factionBadgeUrl(current) : imageUrl(0));
+      const big = user.id ? bigImageUrl(user.id) : (current ? factionBigUrl(current) : bigImageUrl(0));
+      const md = markdownFromUrl(img);
       app.innerHTML = `
         <div class="card">
           <div class="row">
@@ -78,28 +94,60 @@
           <div class="space"></div>
           <h3>在 GitHub README 显示徽章</h3>
           <p class="muted">复制以下 Markdown 到你的 README：</p>
-          <div class="badge"><code>${md.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</code></div>
+          <div class="badge"><code id="mdCode">${md.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</code></div>
           <div class="space"></div>
           <p class="muted">或直接图片链接：</p>
-          <div class="badge"><code>${img}</code></div>
+          <div class="badge"><code id="imgCode">${img}</code></div>
           <div class="space"></div>
-          <img src="${img}" alt="faction badge" />
+          <img id="badgeImg" src="${img}" alt="faction badge" />
           <div class="space"></div>
           <h3>大图（适合放置在 README 顶部横幅）</h3>
-          <div class="badge"><code>${big}</code></div>
+          <div class="badge"><code id="bigCode">${big}</code></div>
           <div class="space"></div>
-          <img src="${big}" alt="faction image" style="max-width: 100%; height: auto;" />
+          <img id="bigImg" src="${big}" alt="faction image" style="max-width: 100%; height: auto;" />
         </div>
         <footer>提示：徽章地址固定为 <code>${window.location.origin}/badge/&lt;你的用户ID&gt;.svg</code></footer>
       `;
+      const onPreview = () => {
+        const chosen = document.querySelector('input[name="faction"]:checked');
+        if (!chosen) return;
+        const badgeUrl = factionBadgeUrl(chosen.value);
+        const bigUrl = factionBigUrl(chosen.value);
+        const badgeImgEl = document.getElementById('badgeImg');
+        const bigImgEl = document.getElementById('bigImg');
+        if (badgeImgEl) badgeImgEl.src = cacheBust(badgeUrl);
+        if (bigImgEl) bigImgEl.src = cacheBust(bigUrl);
+        const mdEl = document.getElementById('mdCode');
+        const imgEl = document.getElementById('imgCode');
+        const bigEl = document.getElementById('bigCode');
+        if (mdEl) mdEl.textContent = markdownFromUrl(badgeUrl);
+        if (imgEl) imgEl.textContent = badgeUrl;
+        if (bigEl) bigEl.textContent = bigUrl;
+      };
+      document.querySelectorAll('input[name="faction"]').forEach(el => {
+        el.addEventListener('change', onPreview);
+      });
+
       document.getElementById('saveBtn').addEventListener('click', async () => {
         const chosen = document.querySelector('input[name="faction"]:checked');
         if (!chosen) { alert('请选择一个阵营'); return; }
         try {
           const resp = await setFaction(chosen.value);
           if (resp.ok) {
+            const u = resp.user || { id: user.id };
+            const badgeUrl = u.id ? imageUrl(u.id) : factionBadgeUrl(chosen.value);
+            const bigUrl = u.id ? bigImageUrl(u.id) : factionBigUrl(chosen.value);
+            const badgeImgEl = document.getElementById('badgeImg');
+            const bigImgEl = document.getElementById('bigImg');
+            if (badgeImgEl) badgeImgEl.src = cacheBust(badgeUrl);
+            if (bigImgEl) bigImgEl.src = cacheBust(bigUrl);
+            const mdEl = document.getElementById('mdCode');
+            const imgEl = document.getElementById('imgCode');
+            const bigEl = document.getElementById('bigCode');
+            if (mdEl) mdEl.textContent = markdownFromUrl(badgeUrl);
+            if (imgEl) imgEl.textContent = badgeUrl;
+            if (bigEl) bigEl.textContent = bigUrl;
             alert('已保存！');
-            location.reload();
           } else {
             alert('保存失败');
           }
