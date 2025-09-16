@@ -1,0 +1,1 @@
+# Faction Picker\r\n\r\n- 匿名或 GitHub 登录选择阵营 A/B\r\n- 徽章接口：/badge/<id>.svg 可用于 README\r\n\r\n## 本地运行\r\n1. 复制 .env.example 为 .env 并按需填写\r\n2. npm install\r\n3. npm run dev\r\n\r\n## GitHub OAuth（可选）\r\n- 填写 .env 中的 GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET\r\n- OAuth 回调：{BASE_URL}/auth/github/callback\r\n\r\n## README 嵌入\r\n![](http://localhost:3000/badge/<你的用户ID>.svg)\r\n

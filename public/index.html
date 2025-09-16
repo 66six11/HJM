@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>阵营选择 | GitHub 登录</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'PingFang SC', 'Microsoft YaHei', sans-serif; margin: 0; padding: 24px; background: #f6f7fb; color: #222; }
+    .card { max-width: 720px; margin: 0 auto; background: #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); padding: 24px; }
+    .row { display: flex; gap: 16px; align-items: center; }
+    .space { height: 16px; }
+    .btn { display: inline-flex; align-items: center; gap: 8px; background: #24292f; color: #fff; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+    .btn.secondary { background: #4e8dd6; }
+    .badge { background: #eef2ff; border: 1px solid #dbe3ff; color: #334155; padding: 6px 10px; border-radius: 8px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; display: inline-block; }
+    .muted { color: #6b7280; }
+    .avatar { width: 40px; height: 40px; border-radius: 999px; }
+    label { display: inline-flex; align-items: center; gap: 6px; margin-right: 16px; }
+    code { background: #f1f5f9; padding: 2px 6px; border-radius: 6px; }
+    footer { margin-top: 24px; color: #6b7280; font-size: 12px; text-align: center; }
+  </style>
+  <script>
+    async function fetchMe() {
+      try {
+        const res = await fetch('/api/me', { credentials: 'include' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return await res.json();
+      } catch (e) {
+        console.error('获取状态失败:', e);
+        return { authenticated: false, user: { id: 0, username: 'Guest', avatarUrl: '', faction: '' } };
+      }
+    }
+    async function fetchConfig() {
+      try {
+        const res = await fetch('/api/config');
+        return await res.json();
+      } catch { return { githubConfigured: false }; }
+    }
+    async function setFaction(faction) {
+      const res = await fetch('/api/faction', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ faction }) });
+      return res.json();
+    }
+    function markdownSnippet(id) {
+      const origin = window.location.origin;
+      return `![faction](${origin}/badge/${id}.svg)`;
+    }
+    function imageUrl(id) {
+      const origin = window.location.origin;
+      return `${origin}/badge/${id}.svg`;
+    }
+    async function init() {
+      const [state, cfg] = await Promise.all([fetchMe(), fetchConfig()]);
+      const app = document.getElementById('app');
+      const user = state.user;
+      const current = user.faction || '';
+      const md = markdownSnippet(user.id);
+      const img = imageUrl(user.id);
+      const big = `${window.location.origin}/image/${user.id}.svg`;
+      app.innerHTML = `
+        <div class="card">
+          <div class="row">
+            <img class="avatar" src="${user.avatarUrl || ''}" alt="avatar" />
+            <div>
+              <div><b>${user.username}</b></div>
+              <div class="muted">用户ID: ${user.id} ${state.authenticated ? '(已登录)' : '(游客)'}</div>
+            </div>
+          </div>
+          <div class="space"></div>
+          <h3>选择你的阵营</h3>
+          <div>
+            <label><input type="radio" name="faction" value="A" ${current === 'A' ? 'checked' : ''}/> 阵营A</label>
+            <label><input type="radio" name="faction" value="B" ${current === 'B' ? 'checked' : ''}/> 阵营B</label>
+          </div>
+          <div class="space"></div>
+          <div class="row">
+            <button class="btn secondary" id="saveBtn">保存选择</button>
+            ${state.authenticated ? '<form method="post" action="/logout"><button class="btn" type="submit">退出登录</button></form>' : (cfg.githubConfigured ? '<button class="btn" onclick="window.location.href=\'/auth/github\'">使用 GitHub 登录</button>' : '<button class="btn" disabled title="未配置 GitHub OAuth">GitHub 登录不可用</button>')}
+          </div>
+          <div class="space"></div>
+          <h3>在 GitHub README 显示徽章</h3>
+          <p class="muted">复制以下 Markdown 到你的 README：</p>
+          <div class="badge"><code>${md.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</code></div>
+          <div class="space"></div>
+          <p class="muted">或直接图片链接：</p>
+          <div class="badge"><code>${img}</code></div>
+          <div class="space"></div>
+          <img src="${img}" alt="faction badge" />
+          <div class="space"></div>
+          <h3>大图（适合放置在 README 顶部横幅）</h3>
+          <div class="badge"><code>${big}</code></div>
+          <div class="space"></div>
+          <img src="${big}" alt="faction image" style="max-width: 100%; height: auto;" />
+        </div>
+        <footer>提示：徽章地址固定为 <code>${window.location.origin}/badge/&lt;你的用户ID&gt;.svg</code></footer>
+      `;
+      document.getElementById('saveBtn').addEventListener('click', async () => {
+        const chosen = document.querySelector('input[name="faction"]:checked');
+        if (!chosen) { alert('请选择一个阵营'); return; }
+        try {
+          const resp = await setFaction(chosen.value);
+          if (resp.ok) {
+            alert('已保存！');
+            location.reload();
+          } else {
+            alert('保存失败');
+          }
+        } catch (e) {
+          console.error('保存失败:', e);
+          alert('保存失败');
+        }
+      });
+    }
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</head>
+<body>
+  <div id="app"></div>
+</body>
+</html>
+
