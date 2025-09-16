@@ -1,6 +1,8 @@
 import Database from 'better-sqlite3';
 
-const database = new Database('data.db');
+const isVercel = Boolean(process.env.VERCEL);
+const databaseFile = isVercel ? '/tmp/data.db' : 'data.db';
+const database = new Database(databaseFile);
 
 database.pragma('journal_mode = WAL');
 

@@ -219,7 +219,7 @@ app.get('/badge/:id.svg', (req, res) => {
   const id = parseInt(req.params.id, 10);
   const faction = Number.isFinite(id) ? getFactionByUserId(id) : null;
   const svg = renderBadgeSvg(faction);
-  res.setHeader('Content-Type', 'image/svg+xml');
+  res.setHeader('Content-Type', 'image/svg+xml; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.send(svg);
 });
@@ -228,7 +228,7 @@ app.get('/badge', (req, res) => {
   const id = parseInt(req.query.id, 10);
   const faction = Number.isFinite(id) ? getFactionByUserId(id) : null;
   const svg = renderBadgeSvg(faction);
-  res.setHeader('Content-Type', 'image/svg+xml');
+  res.setHeader('Content-Type', 'image/svg+xml; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.send(svg);
 });
@@ -237,7 +237,7 @@ app.get('/image/:id.svg', (req, res) => {
   const id = parseInt(req.params.id, 10);
   const faction = Number.isFinite(id) ? getFactionByUserId(id) : null;
   const svg = renderFactionImageSvg(faction);
-  res.setHeader('Content-Type', 'image/svg+xml');
+  res.setHeader('Content-Type', 'image/svg+xml; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.send(svg);
 });
@@ -246,7 +246,7 @@ app.get('/image', (req, res) => {
   const id = parseInt(req.query.id, 10);
   const faction = Number.isFinite(id) ? getFactionByUserId(id) : null;
   const svg = renderFactionImageSvg(faction);
-  res.setHeader('Content-Type', 'image/svg+xml');
+  res.setHeader('Content-Type', 'image/svg+xml; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.send(svg);
 });
