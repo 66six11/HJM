@@ -7,6 +7,8 @@ const isVercel = Boolean(process.env.VERCEL);
 const userKey = id => `user:${id}`;
 const ghIndexKey = githubId => `gh:${githubId}`;
 const seqKey = 'seq:user:id';
+const countKeyA = 'count:faction:A';
+const countKeyB = 'count:faction:B';
 
 // Local (dev) uses SQLite; Vercel uses KV
 let database = null;
@@ -88,8 +90,15 @@ export async function setUserFaction(userId, faction) {
   if (isVercel) {
     const user = await kv.get(userKey(userId));
     if (!user) return null;
+    const prev = user.faction || null;
     const updated = { ...user, faction: normalized };
     await kv.set(userKey(userId), updated);
+    if (prev !== normalized) {
+      if (prev === 'A') await kv.incrby(countKeyA, -1);
+      if (prev === 'B') await kv.incrby(countKeyB, -1);
+      if (normalized === 'A') await kv.incrby(countKeyA, 1);
+      if (normalized === 'B') await kv.incrby(countKeyB, 1);
+    }
     return updated;
   }
   const statement = database.prepare('UPDATE users SET faction = ? WHERE id = ?');
@@ -105,6 +114,19 @@ export async function getFactionByUserId(userId) {
   const statement = database.prepare('SELECT faction FROM users WHERE id = ?');
   const row = statement.get(userId);
   return row ? row.faction : null;
+}
+
+export async function getStats() {
+  if (isVercel) {
+    const [a, b] = await Promise.all([
+      kv.get(countKeyA).then(v => Number(v) || 0),
+      kv.get(countKeyB).then(v => Number(v) || 0)
+    ]);
+    return { A: a, B: b };
+  }
+  const countA = database.prepare("SELECT COUNT(*) as c FROM users WHERE faction = 'A'").get().c;
+  const countB = database.prepare("SELECT COUNT(*) as c FROM users WHERE faction = 'B'").get().c;
+  return { A: countA, B: countB };
 }
 
 export default database;

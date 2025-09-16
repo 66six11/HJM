@@ -14,7 +14,8 @@ import {
   getUserById,
   setUserFaction,
   getFactionByUserId,
-  createAnonymousUser
+  createAnonymousUser,
+  getStats
 } from './db.js';
 
 dotenv.config();
@@ -136,6 +137,15 @@ app.get('/api/me', (req, res) => {
 
 app.get('/api/config', (_req, res) => {
   res.json({ githubConfigured, baseUrl });
+});
+
+app.get('/api/stats', async (_req, res) => {
+  try {
+    const stats = await getStats();
+    res.json({ ok: true, stats });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: 'Failed to get stats' });
+  }
 });
 
 app.post('/api/faction', (req, res) => {

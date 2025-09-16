@@ -70,6 +70,13 @@
       const current = user.faction || '';
       const img = user.id ? imageUrl(user.id) : (current ? factionBadgeUrl(current) : imageUrl(0));
       const big = user.id ? bigImageUrl(user.id) : (current ? factionBigUrl(current) : bigImageUrl(0));
+      let statsHtml = '';
+      try {
+        const s = await (await fetch('/api/stats')).json();
+        if (s && s.ok && s.stats) {
+          statsHtml = `<div class="space"></div><div class="muted">当前统计：阵营A = ${s.stats.A}，阵营B = ${s.stats.B}</div>`;
+        }
+      } catch {}
       const md = markdownFromUrl(img);
       app.innerHTML = `
         <div class="card">
@@ -105,6 +112,7 @@
           <div class="badge"><code id="bigCode">${big}</code></div>
           <div class="space"></div>
           <img id="bigImg" src="${big}" alt="faction image" style="max-width: 100%; height: auto;" />
+          ${statsHtml}
         </div>
         <footer>提示：徽章地址固定为 <code>${window.location.origin}/badge/&lt;你的用户ID&gt;.svg</code></footer>
       `;
