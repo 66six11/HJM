@@ -188,6 +188,14 @@ function renderBadgeSvg(faction) {
 </svg>`;
 }
 
+function normalizeFaction(input) {
+  if (!input) return null;
+  const v = String(input).trim().toUpperCase();
+  if (v === 'A' || v === '1') return 'A';
+  if (v === 'B' || v === '2') return 'B';
+  return null;
+}
+
 function renderFactionImageSvg(faction) {
   const factionLabel = faction === 'A' ? '阵营A' : faction === 'B' ? '阵营B' : '未选择';
   const color = faction === 'A' ? '#ff6b6b' : faction === 'B' ? '#4dabf7' : '#cbd5e1';
@@ -224,9 +232,21 @@ app.get('/badge/:id.svg', async (req, res) => {
   res.send(svg);
 });
 
+app.get('/badge/faction/:f.svg', (req, res) => {
+  const faction = normalizeFaction(req.params.f);
+  const svg = renderBadgeSvg(faction);
+  res.setHeader('Content-Type', 'image/svg+xml; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.send(svg);
+});
+
 app.get('/badge', async (req, res) => {
-  const id = parseInt(req.query.id, 10);
-  const faction = Number.isFinite(id) ? await getFactionByUserId(id) : null;
+  const f = normalizeFaction(req.query.faction || req.query.f);
+  let faction = f;
+  if (!faction) {
+    const id = parseInt(req.query.id, 10);
+    faction = Number.isFinite(id) ? await getFactionByUserId(id) : null;
+  }
   const svg = renderBadgeSvg(faction);
   res.setHeader('Content-Type', 'image/svg+xml; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -242,9 +262,21 @@ app.get('/image/:id.svg', async (req, res) => {
   res.send(svg);
 });
 
+app.get('/image/faction/:f.svg', (req, res) => {
+  const faction = normalizeFaction(req.params.f);
+  const svg = renderFactionImageSvg(faction);
+  res.setHeader('Content-Type', 'image/svg+xml; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.send(svg);
+});
+
 app.get('/image', async (req, res) => {
-  const id = parseInt(req.query.id, 10);
-  const faction = Number.isFinite(id) ? await getFactionByUserId(id) : null;
+  const f = normalizeFaction(req.query.faction || req.query.f);
+  let faction = f;
+  if (!faction) {
+    const id = parseInt(req.query.id, 10);
+    faction = Number.isFinite(id) ? await getFactionByUserId(id) : null;
+  }
   const svg = renderFactionImageSvg(faction);
   res.setHeader('Content-Type', 'image/svg+xml; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
