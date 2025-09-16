@@ -265,8 +265,13 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal Server Error' });
 });
 
-app.listen(port, () => {
-  // eslint-disable-next-line no-console
-  console.log(`Server listening on ${baseUrl}`);
-});
+const isVercel = Boolean(process.env.VERCEL);
+if (!isVercel) {
+  app.listen(port, () => {
+    // eslint-disable-next-line no-console
+    console.log(`Server listening on ${baseUrl}`);
+  });
+}
+
+export default app;
 
